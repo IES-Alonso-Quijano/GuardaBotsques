@@ -73,4 +73,4 @@ IES Alonso Quijano
 
 ---
 
-*guardaBOTsques · IES Alonso Quijano · 2024*
+*guardaBOTsques · IES Alonso Quijano · 2026*
