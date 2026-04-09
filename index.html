@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>guardaBOTsques</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Nunito:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#0B0F14;--bg1:#131A22;--bg2:#1C2630;--bg3:#233040;--fire:#FF5722;--orange:#FF9800;--yellow:#FFC107;--green:#4CAF50;--blue:#29B6F6;--red:#F44336;--purple:#AB47BC;--txt:#EAE8E3;--txt2:#7A8FA0;--border:rgba(255,255,255,0.07);--radius:14px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--txt);overflow:hidden}
+#app{height:100dvh;max-width:480px;margin:0 auto;position:relative;display:flex;flex-direction:column;overflow:hidden}
+.screen{display:none;flex-direction:column;height:100%;overflow:hidden}
+.screen.active{display:flex}
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+#screen-home{background:radial-gradient(ellipse at 50% 30%,rgba(255,87,34,.12) 0%,var(--bg) 65%);justify-content:space-between}
+.home-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px 12px;gap:14px}
+.home-title{font-family:'Rajdhani',sans-serif;font-size:2.6rem;font-weight:700;letter-spacing:.04em;text-align:center;line-height:1}
+.home-title span{color:var(--fire)}
+.home-sub{font-size:.72rem;color:var(--txt2);text-align:center;letter-spacing:.18em;text-transform:uppercase}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px 14px}
+.nav-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius);padding:18px 14px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:background .15s,transform .1s;user-select:none}
+.nav-card:active{transform:scale(.96);background:var(--bg2)}
+.nav-card .ic{font-size:1.7rem;line-height:1}
+.nav-card .nc-lbl{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.97rem;line-height:1.15}
+.nav-card .nc-desc{font-size:.68rem;color:var(--txt2);line-height:1.35}
+.nc-fire{border-top:2px solid var(--fire)}.nc-blue{border-top:2px solid var(--blue)}.nc-red{border-top:2px solid var(--red)}.nc-amber{border-top:2px solid var(--yellow)}.nc-water{border-top:2px solid #29b6f6}.nc-green{border-top:2px solid var(--green)}
+.home-footer{padding:12px 20px 20px;text-align:center;font-size:.65rem;color:var(--txt2);line-height:1.6;border-top:1px solid var(--border);flex-shrink:0}
+.risk-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:40px;font-size:.75rem;font-weight:700;letter-spacing:.04em}
+.pill-safe{background:rgba(76,175,80,.15);border:1px solid rgba(76,175,80,.3);color:#A5D6A7}
+.pill-warn{background:rgba(255,152,0,.15);border:1px solid rgba(255,152,0,.3);color:#FFCC80}
+.pill-danger{background:rgba(244,67,54,.15);border:1px solid rgba(244,67,54,.35);color:#EF9A9A}
+.pill-extreme{background:rgba(171,71,188,.15);border:1px solid rgba(171,71,188,.35);color:#CE93D8}
+.scrn-hdr{background:var(--bg1);padding:13px 16px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--border);flex-shrink:0}
+.back-btn{background:none;border:none;color:var(--fire);font-size:1.3rem;cursor:pointer;padding:4px 6px;border-radius:8px;line-height:1}
+.back-btn:active{background:rgba(255,87,34,.15)}
+.scrn-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.15rem;letter-spacing:.05em}
+#map-wrap{flex:1;position:relative;overflow:hidden}
+#lmap{width:100%;height:100%}
+.map-ctrl{position:absolute;top:10px;right:10px;z-index:999;display:flex;flex-direction:column;gap:7px}
+.map-btn{background:var(--bg1);border:1px solid var(--border);color:var(--txt);border-radius:10px;padding:8px 13px;font-size:.72rem;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:.15s}
+.map-btn.on{background:var(--fire);border-color:var(--fire);color:#fff}
+.map-btn:active{opacity:.8}
+.layer-bar{position:absolute;bottom:0;left:0;right:0;background:var(--bg1);border-top:1px solid var(--border);padding:10px 14px;z-index:999;display:flex;flex-wrap:wrap;gap:10px}
+.ltog{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.72rem;user-select:none}
+.ldot{width:9px;height:9px;border-radius:50%;border:2px solid currentColor;transition:.15s}
+.ldot.on{background:currentColor}
+.map-attr{position:absolute;bottom:52px;left:8px;z-index:998;font-size:.55rem;color:rgba(255,255,255,.5);background:rgba(0,0,0,.45);padding:3px 7px;border-radius:5px}
+.map-attr a{color:#90CAF9;text-decoration:none}
+.meteo-wrap{padding:16px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--bg1);border-radius:var(--radius);padding:16px}
+.seclbl{font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--txt2);margin-bottom:10px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stat{display:flex;flex-direction:column;gap:3px}
+.stat .lbl{font-size:.65rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.1em}
+.stat .val{font-family:'Rajdhani',sans-serif;font-size:2rem;font-weight:700;line-height:1}
+.stat .unt{font-size:.8rem;color:var(--txt2)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
+.b-low{background:#1B5E20;color:#A5D6A7}.b-med{background:#E65100;color:#FFCCBC}.b-hi{background:#B71C1C;color:#FFCDD2}.b-vhi{background:#4A0E8F;color:#E1BEE7}
+.compass-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+.compass{width:56px;height:56px;border:2px solid var(--border);border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center}
+.compass-n{position:absolute;top:2px;font-size:.5rem;font-weight:800;color:var(--txt2)}
+.compass-arr{width:3px;height:22px;background:linear-gradient(to bottom,var(--fire) 50%,var(--txt2) 50%);border-radius:2px;transform-origin:center;position:absolute;transition:transform .8s ease}
+.compass-lbl{font-family:'Rajdhani',sans-serif;font-size:.8rem;font-weight:700}
+.gauge-row{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
+.gauge-hdr{display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:2px}
+.gauge-track{height:7px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.lnk{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--txt);transition:.15s;margin-bottom:8px}
+.lnk:active{opacity:.75}
+.lnk .lic{font-size:1.4rem;flex-shrink:0}
+.lnk .ltit{font-weight:700;font-size:.85rem}
+.lnk .ldesc{font-size:.68rem;color:var(--txt2)}
+.lnk-arr{margin-left:auto;color:var(--txt2);font-size:.9rem}
+.extra-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.extra-item{background:var(--bg2);border-radius:10px;padding:10px 12px}
+.extra-item .elbl{font-size:.62rem;color:var(--txt2);text-transform:uppercase;letter-spacing:.08em}
+.extra-item .eval{font-family:'Rajdhani',sans-serif;font-size:1.2rem;font-weight:700}
+.extra-item .eunt{font-size:.7rem;color:var(--txt2)}
+.risk-wrap{padding:16px;display:flex;flex-direction:column;gap:16px}
+.gauge-big{text-align:center;padding:20px 16px 16px}
+.gauge-big canvas{display:block;margin:0 auto}
+.risk-big-val{font-family:'Rajdhani',sans-serif;font-size:3rem;font-weight:700;line-height:1;margin-top:8px}
+.risk-big-lbl{font-size:.95rem;font-weight:800;letter-spacing:.05em;margin-top:4px}
+.risk-big-desc{font-size:.72rem;color:var(--txt2);margin-top:6px;line-height:1.5}
+.factor-card{background:var(--bg1);border-radius:12px;padding:14px 15px;margin-bottom:9px}
+.fc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.fc-name{font-weight:700;font-size:.9rem}
+.fc-val{font-family:'Rajdhani',sans-serif;font-size:1.1rem;font-weight:700}
+.fc-desc{font-size:.72rem;color:var(--txt2);line-height:1.4}
+.slope-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.slope-cell{border-radius:9px;padding:8px 4px;text-align:center}
+.slope-cell .sdir{font-size:.95rem}
+.slope-cell .sname{font-size:.62rem;margin-top:1px}
+.slope-cell .srisk{font-size:.55rem;font-weight:800;margin-top:2px;letter-spacing:.05em}
+.s-ext{background:rgba(244,67,54,.2);color:#EF9A9A}.s-high{background:rgba(255,152,0,.2);color:#FFCC80}.s-med{background:rgba(255,193,7,.12);color:#FFF176}.s-low{background:rgba(76,175,80,.1);color:#A5D6A7}
+.alt-bar{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.alt-bar:last-child{border-bottom:none;padding-bottom:0}
+.alt-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.alt-name{font-weight:700;font-size:.82rem}
+.alt-desc{font-size:.68rem;color:var(--txt2)}
+.guide-wrap{padding:16px;display:flex;flex-direction:column;gap:14px}
+.guide-card{background:var(--bg1);border-radius:var(--radius);padding:15px}
+.guide-card h3{font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--border)}
+.leg-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.leg-item:last-child{margin-bottom:0}
+.leg-col{width:14px;height:14px;border-radius:3px;flex-shrink:0;margin-top:2px}
+.leg-name{font-weight:700;font-size:.82rem}
+.leg-desc{font-size:.7rem;color:var(--txt2);line-height:1.4;margin-top:1px}
+.info-row{display:flex;gap:8px;margin-bottom:9px;font-size:.78rem;line-height:1.5}
+.info-row:last-child{margin-bottom:0}
+.info-row .iico{flex-shrink:0;margin-top:1px}
+.thr-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:.78rem}
+.thr-row:last-child{border-bottom:none;padding-bottom:0}
+.thr-row .param{font-weight:600}
+.thr-row .val{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem}
+.thr-row .meaning{font-size:.65rem;color:var(--txt2);text-align:right}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:9px 16px;font-size:.75rem;color:var(--txt2);pointer-events:none;opacity:0;transition:opacity .3s,transform .3s;z-index:9999;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes flicker{0%,100%{transform:scaleY(1) rotate(-1deg)}50%{transform:scaleY(1.06) rotate(1.2deg)}}
+.flicker{animation:flicker 2.2s ease-in-out infinite;transform-origin:bottom center}
+.fu0{animation:fadeUp .4s .0s both}.fu1{animation:fadeUp .4s .1s both}.fu2{animation:fadeUp .4s .2s both}.fu3{animation:fadeUp .4s .3s both}.fu4{animation:fadeUp .4s .4s both}
+.spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--fire);border-radius:50%;animation:spin .7s linear infinite}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px;color:var(--txt2);font-size:.82rem}
+.leaflet-control-attribution{display:none!important}
+.leaflet-bar a{background:var(--bg1)!important;color:var(--txt)!important;border-color:var(--border)!important}
+.leaflet-popup-content-wrapper{background:var(--bg1)!important;color:var(--txt)!important;border:1px solid var(--border)!important;border-radius:10px!important;box-shadow:0 4px 20px rgba(0,0,0,.5)!important}
+.leaflet-popup-tip{background:var(--bg1)!important}
+.leaflet-popup-content{margin:10px 14px!important;font-family:'Nunito',sans-serif;font-size:.8rem}
+
+/* ── PERMISSION MODAL ── */
+#perm-modal{display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);align-items:flex-end;justify-content:center}
+#perm-modal.open{display:flex;animation:fadeUp .3s both}
+.perm-sheet{background:var(--bg1);border-radius:22px 22px 0 0;border-top:1px solid var(--border);width:100%;max-width:480px;padding:26px 22px 36px;display:flex;flex-direction:column;gap:16px}
+.perm-header{display:flex;align-items:center;gap:14px}
+.perm-icon{width:60px;height:60px;border-radius:16px;background:rgba(255,87,34,.12);border:1px solid rgba(255,87,34,.28);display:flex;align-items:center;justify-content:center;font-size:1.9rem;flex-shrink:0}
+.perm-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.3rem;line-height:1.2}
+.perm-desc{font-size:.8rem;color:var(--txt2);line-height:1.65;border-left:2px solid rgba(255,87,34,.3);padding-left:11px}
+.perm-reasons{display:flex;flex-direction:column;gap:8px}
+.perm-reason{display:flex;align-items:flex-start;gap:11px;background:var(--bg2);border-radius:11px;padding:11px 13px}
+.perm-reason .pr-ico{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.perm-reason .pr-body .pr-name{font-weight:700;font-size:.8rem}
+.perm-reason .pr-body .pr-sub{font-size:.7rem;color:var(--txt2);margin-top:1px;line-height:1.45}
+.perm-note{font-size:.65rem;color:var(--txt2);line-height:1.55;text-align:center;background:rgba(255,255,255,.03);border-radius:9px;padding:9px 12px;border:1px solid var(--border)}
+.perm-note strong{color:var(--txt)}
+.perm-btns{display:flex;flex-direction:column;gap:9px}
+.perm-allow{background:var(--fire);border:none;border-radius:13px;color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1rem;padding:15px;cursor:pointer;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
+.perm-allow:active{opacity:.85}
+.perm-manual{background:none;border:1px solid var(--border);border-radius:13px;color:var(--txt2);font-size:.8rem;padding:12px;cursor:pointer;font-family:'Nunito',sans-serif;transition:.15s}
+.perm-manual:active{background:var(--bg2)}
+
+/* ── LOCATION PICKER MODAL ── */
+#loc-modal{display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center}
+#loc-modal.open{display:flex;animation:fadeUp .25s both}
+.loc-sheet{background:var(--bg1);border-radius:20px 20px 0 0;border-top:1px solid var(--border);width:100%;max-width:480px;padding:20px 20px 32px;display:flex;flex-direction:column;gap:14px}
+.loc-sheet h2{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.1rem;display:flex;align-items:center;gap:8px}
+.loc-sub{font-size:.72rem;color:var(--txt2);line-height:1.5;margin-top:-6px}
+.loc-deny-box{background:rgba(244,67,54,.08);border:1px solid rgba(244,67,54,.2);border-radius:10px;padding:11px 13px;font-size:.72rem;color:#EF9A9A;line-height:1.55}
+.loc-deny-box strong{color:#F44336;display:block;margin-bottom:2px}
+.loc-search-row{display:flex;gap:8px}
+.loc-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--txt);font-family:'Nunito',sans-serif;font-size:.85rem;outline:none}
+.loc-input:focus{border-color:var(--fire)}
+.loc-input::placeholder{color:var(--txt2)}
+.loc-search-btn{background:var(--fire);border:none;border-radius:10px;color:#fff;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;padding:10px 16px;cursor:pointer;letter-spacing:.04em;white-space:nowrap}
+.loc-search-btn:active{opacity:.8}
+.loc-results{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.loc-result-item{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;cursor:pointer;font-size:.82rem;display:flex;align-items:center;gap:10px;transition:.15s}
+.loc-result-item:active{background:var(--bg3)}
+.loc-result-item .r-name{font-weight:700}
+.loc-result-item .r-detail{font-size:.68rem;color:var(--txt2);margin-top:1px}
+.loc-result-item .r-ico{font-size:1.1rem;flex-shrink:0}
+.loc-msg{font-size:.75rem;color:var(--txt2);text-align:center;padding:12px 0}
+.loc-skip{background:none;border:1px solid var(--border);border-radius:10px;color:var(--txt2);font-size:.78rem;padding:9px;cursor:pointer;font-family:'Nunito',sans-serif}
+.loc-skip:active{background:var(--bg2)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div id="toast"></div>
+
+<div id="perm-modal">
+  <div class="perm-sheet">
+    <div class="perm-header">
+      <div class="perm-icon">📍</div>
+      <div class="perm-title">Permiso de<br>ubicación</div>
+    </div>
+
+    <p class="perm-desc">
+      guardaBOTsques necesita tu posición para cargar datos meteorológicos locales,
+      calcular el índice de riesgo de incendio y centrar el mapa en tu zona.
+    </p>
+
+    <div class="perm-reasons">
+      <div class="perm-reason">
+        <span class="pr-ico">🌡️</span>
+        <div class="pr-body">
+          <div class="pr-name">Meteorología local</div>
+          <div class="pr-sub">Temperatura, humedad y viento exactos de tu municipio.</div>
+        </div>
+      </div>
+      <div class="perm-reason">
+        <span class="pr-ico">🔥</span>
+        <div class="pr-body">
+          <div class="pr-name">Índice FWI personalizado</div>
+          <div class="pr-sub">El cálculo de riesgo se basa en los datos de tu área.</div>
+        </div>
+      </div>
+      <div class="perm-reason">
+        <span class="pr-ico">🗺️</span>
+        <div class="pr-body">
+          <div class="pr-name">Mapa centrado en tu posición</div>
+          <div class="pr-sub">Visualiza zonas de riesgo y focos activos cercanos.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="perm-note">
+      <strong>🔒 Privacidad:</strong> tu ubicación solo se usa para consultar la API meteorológica
+      de Open-Meteo y no se almacena en ningún servidor. La app funciona completamente en tu dispositivo.
+    </div>
+
+    <div class="perm-btns">
+      <button class="perm-allow" onclick="permAllow()">
+        <span>📍</span> Permitir acceso a la ubicación
+      </button>
+      <button class="perm-manual" onclick="permManual()">
+        Introducir ubicación manualmente
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="loc-modal">
+  <div class="loc-sheet">
+    <h2>📍 Ubicación manual</h2>
+    <div id="loc-deny-info" class="loc-deny-box" style="display:none">
+      <strong>⚠️ Permiso de ubicación denegado</strong>
+      El navegador ha bloqueado el acceso al GPS. Para activarlo:<br>
+      Chrome/Edge → barra de direcciones → 🔒 → Permisos del sitio → Ubicación → Permitir<br>
+      Firefox → barra de direcciones → 🔒 → Más información → Permisos → Acceder a tu ubicación
+    </div>
+    <p class="loc-sub">Busca tu municipio o provincia para obtener datos meteorológicos y mapa de tu zona.</p>
+    <div class="loc-search-row">
+      <input class="loc-input" id="loc-input" type="text"
+             placeholder="Ej: Salamanca, Guadalajara, Cuenca..."
+             autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="loc-search-btn" onclick="locSearch()">Buscar</button>
+    </div>
+    <div class="loc-results" id="loc-results">
+      <div class="loc-msg">Escribe un municipio y pulsa Buscar</div>
+    </div>
+    <button class="loc-skip" onclick="locSkip()">Usar Madrid por defecto y continuar</button>
+  </div>
+</div>
+
+<div id="screen-home" class="screen active">
+  <div class="home-hero">
+    <div class="fu0">
+      <svg width="110" height="110" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="55" cy="55" r="52" fill="rgba(255,87,34,.07)" stroke="rgba(255,87,34,.18)" stroke-width="1.2"/>
+        <polygon points="16,82 23,62 30,82" fill="#2D5A27" opacity=".9"/>
+        <polygon points="20,82 30,48 40,82" fill="#3B7032"/>
+        <polygon points="70,82 80,48 90,82" fill="#3B7032"/>
+        <polygon points="80,82 87,62 94,82" fill="#2D5A27" opacity=".9"/>
+        <line x1="10" y1="83" x2="100" y2="83" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+        <g class="flicker">
+          <path d="M55 80 C46 70 43 58 48 46 C50 57 54 59 55 53 C55 61 61 65 59 73 C64 64 67 55 64 42 C71 53 72 68 64 80 Z" fill="#FF5722"/>
+          <path d="M55 80 C49 72 47 63 51 54 C53 62 55 64 55 57 C56 64 59 68 57 75 C61 67 63 59 60 49 C66 60 66 73 61 80 Z" fill="#FF9800"/>
+          <path d="M55 80 C52 74 51 68 53 61 C54 66 55 68 55 62 C56 67 57 70 56 76 C58 71 59 66 57 58 C62 65 62 75 58 80 Z" fill="#FFC107"/>
+        </g>
+        <circle cx="51" cy="67" r="2.2" fill="white" opacity=".85"/>
+        <circle cx="59" cy="67" r="2.2" fill="white" opacity=".85"/>
+      </svg>
+    </div>
+    <div class="fu1">
+      <div class="home-title">guarda<span>BOT</span>sques</div>
+      <div class="home-sub">Vigilancia inteligente de incendios forestales</div>
+    </div>
+    <div class="fu2" id="home-pill" style="display:none">
+      <div class="risk-pill pill-warn" id="home-pill-inner">
+        <span id="home-pill-ico">⏳</span>
+        <span id="home-pill-txt">Calculando riesgo...</span>
+      </div>
+    </div>
+  </div>
+  <div class="home-grid fu3">
+    <div class="nav-card nc-fire"  onclick="go('map')"><span class="ic">🗺️</span><div class="nc-lbl">Mapa Principal</div><div class="nc-desc">Terreno, agua y caminos</div></div>
+    <div class="nav-card nc-blue"  onclick="go('meteo')"><span class="ic">🌡️</span><div class="nc-lbl">Meteorología</div><div class="nc-desc">Temp., viento y humedad</div></div>
+    <div class="nav-card nc-red"   onclick="go('risk')"><span class="ic">🔥</span><div class="nc-lbl">Índice de Riesgo</div><div class="nc-desc">FWI simplificado en tiempo real</div></div>
+    <div class="nav-card nc-amber" onclick="go('guide')"><span class="ic">📖</span><div class="nc-lbl">Guía y Leyenda</div><div class="nc-desc">Colores, umbrales y fuentes</div></div>
+    <div class="nav-card nc-water" onclick="go('map');qLayer('water')"><span class="ic">💧</span><div class="nc-lbl">Recursos Hídricos</div><div class="nc-desc">Ríos, embalses, captaciones</div></div>
+    <div class="nav-card nc-green" onclick="go('map');qLayer('topo')"><span class="ic">⛰️</span><div class="nc-lbl">Topografía</div><div class="nc-desc">Curvas de nivel y pendientes</div></div>
+  </div>
+  <div class="home-footer fu4">App desarrollada por los alumnos de 2º de Bachillerato de<br>Ciencias de la Computación II del IES Alonso Quijano</div>
+</div>
+
+<div id="screen-map" class="screen">
+  <div class="scrn-hdr"><button class="back-btn" onclick="go('home')">←</button><div class="scrn-title">🗺️ Mapa de Riesgo</div></div>
+  <div id="map-wrap">
+    <div id="lmap"></div>
+    <div class="map-ctrl">
+      <button class="map-btn on" id="mbtn-osm"  onclick="baseLayer('osm')">OSM</button>
+      <button class="map-btn"    id="mbtn-topo" onclick="baseLayer('topo')">Topo</button>
+      <button class="map-btn"    id="mbtn-sat"  onclick="baseLayer('sat')">Satélite</button>
+      <button class="map-btn"    onclick="locateMe()">📍 Ir a mí</button>
+    </div>
+    <div class="map-attr">Mapa: <a id="map-credit-link" href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap</a></div>
+    <div class="layer-bar">
+      <div class="ltog" onclick="togOv('water')"><div class="ldot" id="dot-water" style="color:#29B6F6"></div><span>💧 Agua</span></div>
+      <div class="ltog" onclick="togOv('roads')"><div class="ldot" id="dot-roads" style="color:#FF9800"></div><span>🛤️ Senderos</span></div>
+      <div class="ltog" onclick="togOv('risk')"><div class="ldot" id="dot-risk" style="color:#F44336"></div><span>🔥 Zonas riesgo</span></div>
+      <div class="ltog" onclick="togOv('nasa')"><div class="ldot" id="dot-nasa" style="color:#AB47BC"></div><span>🛰️ Focos Activos</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-meteo" class="screen">
+  <div class="scrn-hdr"><button class="back-btn" onclick="go('home')">←</button><div class="scrn-title">🌡️ Meteorología en Tiempo Real</div></div>
+  <div class="scroll-area">
+    <div id="meteo-loading" class="loading"><div class="spinner"></div>Obteniendo datos meteorológicos...</div>
+    <div id="meteo-body" class="meteo-wrap" style="display:none">
+      <div style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--txt2)"><span>📍</span><span id="m-loc">–</span></div>
+      <div id="m-alert"></div>
+      <div class="card">
+        <div class="seclbl">Condiciones Actuales</div>
+        <div class="stat-grid">
+          <div class="stat"><span class="lbl">Temperatura</span><div><span class="val" id="m-temp" style="color:var(--fire)">–</span><span class="unt"> °C</span></div><span class="badge" id="b-temp">–</span></div>
+          <div class="stat"><span class="lbl">Humedad Relativa</span><div><span class="val" id="m-hum" style="color:var(--blue)">–</span><span class="unt"> %</span></div><span class="badge" id="b-hum">–</span></div>
+          <div class="stat"><span class="lbl">Velocidad Viento</span><div><span class="val" id="m-wind" style="color:var(--orange)">–</span><span class="unt"> km/h</span></div><span class="badge" id="b-wind">–</span></div>
+          <div class="stat compass-wrap"><span class="lbl">Dirección Viento</span><div class="compass"><span class="compass-n">N</span><div class="compass-arr" id="m-arrow"></div></div><span class="compass-lbl" id="m-wdir">–</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="seclbl" style="margin-bottom:8px">Parámetros adicionales</div>
+        <div class="extra-grid">
+          <div class="extra-item"><div class="elbl">Precipitación 1h</div><div class="eval" id="m-precip">–</div><div class="eunt">mm</div></div>
+          <div class="extra-item"><div class="elbl">Temp. suelo</div><div class="eval" id="m-soil">–</div><div class="eunt">°C</div></div>
+          <div class="extra-item"><div class="elbl">Punto de rocío</div><div class="eval" id="m-dew">–</div><div class="eunt">°C</div></div>
+          <div class="extra-item"><div class="elbl">Radiación solar</div><div class="eval" id="m-rad">–</div><div class="eunt">W/m²</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="seclbl">Indicadores de Peligro</div>
+        <div class="gauge-row"><div class="gauge-hdr"><span>🌡️ Riesgo por Temperatura</span><span id="gl-t" style="color:var(--txt2);font-size:.68rem"></span></div><div class="gauge-track"><div class="gauge-fill" id="gf-t" style="width:0%;background:var(--fire)"></div></div></div>
+        <div class="gauge-row"><div class="gauge-hdr"><span>💨 Riesgo por Viento</span><span id="gl-w" style="color:var(--txt2);font-size:.68rem"></span></div><div class="gauge-track"><div class="gauge-fill" id="gf-w" style="width:0%;background:var(--orange)"></div></div></div>
+        <div class="gauge-row" style="margin-bottom:0"><div class="gauge-hdr"><span>💧 Sequía (humedad baja)</span><span id="gl-h" style="color:var(--txt2);font-size:.68rem"></span></div><div class="gauge-track"><div class="gauge-fill" id="gf-h" style="width:0%;background:var(--blue)"></div></div></div>
+      </div>
+      <div>
+        <div class="seclbl" style="margin-bottom:8px">Fuentes externas en tiempo real</div>
+        <a class="lnk" href="https://www.aemet.es/es/eltiempo/prediccion/incendios" target="_blank"><span class="lic">🔥</span><div><div class="ltit">AEMET — Riesgo de incendios</div><div class="ldesc">Mapa oficial de peligro por provincia</div></div><span class="lnk-arr">↗</span></a>
+        <a class="lnk" href="https://firms.modaps.eosdis.nasa.gov/map/" target="_blank"><span class="lic">🛰️</span><div><div class="ltit">NASA FIRMS — Incendios activos</div><div class="ldesc">Detección satelital en tiempo casi real</div></div><span class="lnk-arr">↗</span></a>
+        <a class="lnk" href="https://effis.jrc.ec.europa.eu/apps/forecasting.html" target="_blank"><span class="lic">🇪🇺</span><div><div class="ltit">EFFIS — European Fire Info System</div><div class="ldesc">FWI y predicción de riesgo en Europa</div></div><span class="lnk-arr">↗</span></a>
+        <a class="lnk" href="https://www.windy.com/?wind,now" target="_blank"><span class="lic">💨</span><div><div class="ltit">Windy — Viento en tiempo real</div><div class="ldesc">Modelo detallado del campo de vientos</div></div><span class="lnk-arr">↗</span></a>
+        <a class="lnk" href="https://drought.emergency.copernicus.eu/erdas/en" target="_blank"><span class="lic">🌍</span><div><div class="ltit">Copernicus — Monitor de Sequía</div><div class="ldesc">Índice de sequía europeo en tiempo real</div></div><span class="lnk-arr">↗</span></a>
+      </div>
+      <div style="text-align:center;font-size:.6rem;color:var(--txt2);padding-bottom:4px">Datos: <a href="https://open-meteo.com" target="_blank" style="color:var(--blue)">Open-Meteo API</a> · Licencia CC BY 4.0 · Actualizado en cada apertura</div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-risk" class="screen">
+  <div class="scrn-hdr"><button class="back-btn" onclick="go('home')">←</button><div class="scrn-title">🔥 Índice de Riesgo de Incendio</div></div>
+  <div class="scroll-area">
+    <div class="risk-wrap">
+      <div class="card gauge-big">
+        <div class="seclbl">Índice FWI Simplificado</div>
+        <canvas id="rcanvas" width="220" height="125"></canvas>
+        <div class="risk-big-val" id="rv-num">–</div>
+        <div class="risk-big-lbl" id="rv-lbl">Calculando...</div>
+        <div class="risk-big-desc" id="rv-desc"></div>
+      </div>
+      <div><div class="seclbl" style="margin-bottom:8px">Factores que determinan el índice</div><div id="rf-list"><div class="loading"><div class="spinner"></div>Cargando datos meteorológicos...</div></div></div>
+      <div class="card">
+        <div class="seclbl">Peligro por Orientación de Ladera</div>
+        <div class="slope-grid">
+          <div class="slope-cell s-ext"><div class="sdir">↓</div><div class="sname">S</div><div class="srisk">MUY ALTO</div></div>
+          <div class="slope-cell s-ext"><div class="sdir">↗</div><div class="sname">SE</div><div class="srisk">MUY ALTO</div></div>
+          <div class="slope-cell s-high"><div class="sdir">→</div><div class="sname">E</div><div class="srisk">ALTO</div></div>
+          <div class="slope-cell s-high"><div class="sdir">↘</div><div class="sname">SO</div><div class="srisk">ALTO</div></div>
+          <div class="slope-cell s-med"><div class="sdir">↙</div><div class="sname">NO</div><div class="srisk">MEDIO</div></div>
+          <div class="slope-cell s-med"><div class="sdir">←</div><div class="sname">O</div><div class="srisk">MEDIO</div></div>
+          <div class="slope-cell s-low"><div class="sdir">↑</div><div class="sname">N</div><div class="srisk">BAJO</div></div>
+          <div class="slope-cell s-low"><div class="sdir">↖</div><div class="sname">NE</div><div class="srisk">BAJO</div></div>
+        </div>
+        <div style="font-size:.7rem;color:var(--txt2);line-height:1.5;margin-top:4px">Las laderas orientadas al sur acumulan más horas de insolación directa. Las del este son especialmente peligrosas a primera hora de la mañana con viento de componente este.</div>
+      </div>
+      <div class="card">
+        <div class="seclbl">Riesgo por Altitud</div>
+        <div style="margin-top:6px">
+          <div class="alt-bar"><div class="alt-dot" style="background:#F44336"></div><div><div class="alt-name">0 – 500 m</div><div class="alt-desc">Máximo riesgo. Vegetación densa, altas temperaturas.</div></div></div>
+          <div class="alt-bar"><div class="alt-dot" style="background:#FF9800"></div><div><div class="alt-name">500 – 1000 m</div><div class="alt-desc">Riesgo moderado-alto. Prados y matorral.</div></div></div>
+          <div class="alt-bar"><div class="alt-dot" style="background:#FFC107"></div><div><div class="alt-name">1000 – 1300 m</div><div class="alt-desc">Riesgo moderado. Vegetación de transición.</div></div></div>
+          <div class="alt-bar"><div class="alt-dot" style="background:#4CAF50"></div><div><div class="alt-name">> 1300 m</div><div class="alt-desc">Riesgo bajo. Menor densidad de combustible.</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="seclbl">Combustibilidad según Vegetación</div>
+        <div style="margin-top:6px">
+          <div class="alt-bar"><div class="alt-dot" style="background:#F44336"></div><div><div class="alt-name">Herbáceos / Pastos</div><div class="alt-desc">Combustión instantánea. Propagación muy rápida.</div></div></div>
+          <div class="alt-bar"><div class="alt-dot" style="background:#FF9800"></div><div><div class="alt-name">Matorral / Jaras / Brezos</div><div class="alt-desc">Muy inflamables. Generan focos secundarios.</div></div></div>
+          <div class="alt-bar"><div class="alt-dot" style="background:#FFC107"></div><div><div class="alt-name">Coníferas / Pinar</div><div class="alt-desc">Resinas inflamables. Riesgo de corona de fuego.</div></div></div>
+          <div class="alt-bar"><div class="alt-dot" style="background:#4CAF50"></div><div><div class="alt-name">Frondosas / Caducifolias</div><div class="alt-desc">Menor combustibilidad. Cortafuegos naturales.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-guide" class="screen">
+  <div class="scrn-hdr"><button class="back-btn" onclick="go('home')">←</button><div class="scrn-title">📖 Guía e Interpretación</div></div>
+  <div class="scroll-area">
+    <div class="guide-wrap">
+      <div class="guide-card">
+        <h3>🎨 Código de Colores del Riesgo</h3>
+        <div class="leg-item"><div class="leg-col" style="background:#4CAF50"></div><div><div class="leg-name">VERDE — Riesgo Bajo</div><div class="leg-desc">T &lt;25 °C · HR &gt;60 % · V &lt;15 km/h. Condiciones favorables.</div></div></div>
+        <div class="leg-item"><div class="leg-col" style="background:#FFC107"></div><div><div class="leg-name">AMARILLO — Riesgo Moderado</div><div class="leg-desc">T 25–30 °C · HR 40–60 % · V 15–25 km/h. Vigilancia preventiva.</div></div></div>
+        <div class="leg-item"><div class="leg-col" style="background:#FF9800"></div><div><div class="leg-name">NARANJA — Riesgo Alto</div><div class="leg-desc">T 30–35 °C · HR 20–40 % · V 25–40 km/h. Alerta activa.</div></div></div>
+        <div class="leg-item"><div class="leg-col" style="background:#F44336"></div><div><div class="leg-name">ROJO — Riesgo Muy Alto</div><div class="leg-desc">T &gt;35 °C · HR &lt;20 % · V &gt;40 km/h. Peligro extremo.</div></div></div>
+        <div class="leg-item" style="margin-bottom:0"><div class="leg-col" style="background:#AB47BC"></div><div><div class="leg-name">MORADO — Riesgo Catastrófico</div><div class="leg-desc">Múltiples factores máximos simultáneos. Activar todos los recursos.</div></div></div>
+      </div>
+      <div class="guide-card">
+        <h3>🌡️ Umbrales Meteorológicos Críticos</h3>
+        <div class="thr-row"><span class="param">🌡️ Temperatura</span><div style="text-align:right"><div class="val" style="color:var(--fire)">&gt;30 °C / &gt;35 °C</div><div class="meaning">Peligro / Peligro muy alto</div></div></div>
+        <div class="thr-row"><span class="param">💨 Viento</span><div style="text-align:right"><div class="val" style="color:var(--orange)">&gt;25 km/h</div><div class="meaning">Propagación peligrosa</div></div></div>
+        <div class="thr-row"><span class="param">💧 Humedad</span><div style="text-align:right"><div class="val" style="color:var(--blue)">&lt;30 % / &lt;20 %</div><div class="meaning">Peligro / Muy alto</div></div></div>
+        <div class="thr-row"><span class="param">🌧️ Sequía</span><div style="text-align:right"><div class="val" style="color:var(--yellow)">+15 días sin lluvia</div><div class="meaning">Sequía operativa</div></div></div>
+      </div>
+      <div class="guide-card">
+        <h3>🗺️ Capas del Mapa</h3>
+        <div class="info-row"><span class="iico">🟦</span><span><strong>OpenStreetMap (OSM):</strong> Mapa colaborativo con caminos, infraestructuras y puntos de agua. Datos bajo licencia ODbL.</span></div>
+        <div class="info-row"><span class="iico">🟫</span><span><strong>OpenTopoMap:</strong> Curvas de nivel cada 20 m, relieve y altimetría basados en datos SRTM de la NASA.</span></div>
+        <div class="info-row"><span class="iico">🟩</span><span><strong>Satélite ESRI:</strong> Imagen real del terreno. Permite identificar masa forestal, zonas quemadas y accesos.</span></div>
+        <div class="info-row"><span class="iico">💧</span><span><strong>Capa Agua (OpenSeaMap):</strong> Ríos navegables, embalses y puntos de captación.</span></div>
+        <div class="info-row" style="margin-bottom:0"><span class="iico">🛤️</span><span><strong>Senderos (WaymarkedTrails):</strong> Red de senderos de montaña y pistas forestales.</span></div>
+      </div>
+      <div class="guide-card">
+        <h3>📡 Fuentes de Datos</h3>
+        <div class="info-row"><span class="iico">🌐</span><span><strong>Open-Meteo:</strong> API meteorológica gratuita y de código abierto. Modelos GFS/ECMWF. Sin clave necesaria.</span></div>
+        <div class="info-row"><span class="iico">🇪🇺</span><span><strong>Copernicus / EFFIS:</strong> Capas del índice de riesgo meteorológico real (FWI) y focos activos detectados por satélite.</span></div>
+        <div class="info-row"><span class="iico">🇪🇸</span><span><strong>AEMET:</strong> Predicciones oficiales de riesgo de incendios por provincia con mapas diarios.</span></div>
+        <div class="info-row" style="margin-bottom:0"><span class="iico">🌍</span><span><strong>Copernicus EMS:</strong> Cartografía de incendios y monitor de sequía continental.</span></div>
+      </div>
+      <div class="guide-card">
+        <h3>📊 Cómo interpretar el Índice FWI</h3>
+        <div class="info-row"><span class="iico">ℹ️</span><span>El <strong>Fire Weather Index (FWI)</strong> es el sistema estándar internacional de la OMM para evaluar el peligro meteorológico de incendios forestales.</span></div>
+        <div class="leg-item" style="margin-top:8px"><div class="leg-col" style="background:#4CAF50"></div><div><div class="leg-name">0–20 — Bajo/Moderado</div><div class="leg-desc">Sin restricciones operativas significativas.</div></div></div>
+        <div class="leg-item"><div class="leg-col" style="background:#FF9800"></div><div><div class="leg-name">21–50 — Alto</div><div class="leg-desc">Activar vigilancia. Restricciones preventivas.</div></div></div>
+        <div class="leg-item"><div class="leg-col" style="background:#F44336"></div><div><div class="leg-name">51–80 — Muy alto</div><div class="leg-desc">Alta probabilidad de incendio. Alerta máxima.</div></div></div>
+        <div class="leg-item" style="margin-bottom:0"><div class="leg-col" style="background:#AB47BC"></div><div><div class="leg-name">>80 — Extremo</div><div class="leg-desc">Condiciones catastróficas. Riesgo de gran incendio.</div></div></div>
+      </div>
+      <div style="text-align:center;font-size:.62rem;color:var(--txt2);padding-bottom:8px">guardaBOTsques · IES Alonso Quijano · 2º Bachillerato Ciencias de la Computación II</div>
+    </div>
+  </div>
+</div>
+
+</div><script>
+// ═══════════════════ TOAST ═════════════════════════
+let _toastTimer;
+function showToast(msg,ms=3000){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),ms)}
+
+// ═══════════════════ PERMISSION MODAL ══════════════
+function openPermModal(){document.getElementById('perm-modal').classList.add('open')}
+function closePermModal(){document.getElementById('perm-modal').classList.remove('open')}
+
+function permAllow(){
+  closePermModal();
+  startLocationFlow();
+}
+function permManual(){
+  closePermModal();
+  openLocModal(false);
+}
+
+// ═══════════════════ GEO ═══════════════════════════
+let geoCache=null;
+const _geoWaiters=[];
+
+function onGeoReady(cb){if(geoCache){cb(geoCache);return}_geoWaiters.push(cb)}
+
+function _resolveGeo(geo){
+  if(geoCache)return;
+  geoCache=geo;
+  _geoWaiters.splice(0).forEach(cb=>cb(geo));
+}
+
+async function reverseGeocode(lat,lng){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,{headers:{'Accept-Language':'es'}});
+    const d=await r.json();const a=d.address||{};
+    return[a.city||a.town||a.village||a.municipality,a.state].filter(Boolean).join(', ')||null;
+  }catch(_){return null}
+}
+
+async function startLocationFlow(){
+  if(!navigator.geolocation){openLocModal(false);return}
+  let permState='prompt';
+  try{
+    const p=await navigator.permissions.query({name:'geolocation'});
+    permState=p.state;
+    p.onchange=()=>{if(p.state==='granted'&&!geoCache)startGPS()};
+  }catch(_){}
+  if(permState==='denied'){openLocModal(true);return}
+  startGPS();
+}
+
+function startGPS(){
+  let bestPos=null,watchId=null,finished=false;
+  function finish(pos){
+    if(finished)return;finished=true;
+    navigator.geolocation.clearWatch(watchId);clearTimeout(limitTimer);
+    const{latitude:lat,longitude:lng,accuracy:acc}=pos.coords;
+    reverseGeocode(lat,lng).then(name=>{
+      name=name||`${lat.toFixed(4)}° N, ${Math.abs(lng).toFixed(4)}° O`;
+      showToast(`📍 ${name} (±${Math.round(acc)} m)`);
+      _resolveGeo({lat,lng,name,accuracy:acc});
+      if(lmap)lmap.setView([lat,lng],10);
+    });
+  }
+  watchId=navigator.geolocation.watchPosition(
+    pos=>{if(!bestPos||pos.coords.accuracy<bestPos.coords.accuracy)bestPos=pos;if(!finished&&pos.coords.accuracy<500)finish(pos)},
+    err=>{if(finished)return;finished=true;navigator.geolocation.clearWatch(watchId);clearTimeout(limitTimer);if(err.code===1)openLocModal(true);else if(bestPos)finish(bestPos);else openLocModal(false)},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  );
+  const limitTimer=setTimeout(()=>{if(finished)return;finished=true;navigator.geolocation.clearWatch(watchId);if(bestPos)finish(bestPos);else openLocModal(false)},15000);
+}
+
+function openLocModal(wasDenied){
+  document.getElementById('loc-deny-info').style.display=wasDenied?'block':'none';
+  document.getElementById('loc-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('loc-input')?.focus(),350);
+}
+function closeLocModal(){document.getElementById('loc-modal').classList.remove('open')}
+
+async function locSearch(){
+  const q=document.getElementById('loc-input').value.trim();if(!q)return;
+  const res=document.getElementById('loc-results');
+  res.innerHTML='<div class="loc-msg"><div class="spinner" style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:6px"></div>Buscando…</div>';
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&countrycodes=es&accept-language=es`);
+    const its=await r.json();
+    if(!its.length){res.innerHTML='<div class="loc-msg">Sin resultados. Prueba con otra localidad.</div>';return}
+    res.innerHTML=its.map(it=>{
+      const parts=it.display_name.split(', ');
+      const name=parts.slice(0,2).join(', ');
+      const detail=parts.slice(2,4).join(', ');
+      const ico={city:'🏙️',town:'🏘️',village:'🏡',municipality:'🏛️',administrative:'📍'}[it.type]||'📍';
+      const safeName=name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return`<div class="loc-result-item" onclick="locPick(${it.lat},${it.lon},'${safeName}')"><span class="r-ico">${ico}</span><div><div class="r-name">${name}</div><div class="r-detail">${detail}</div></div></div>`;
+    }).join('');
+  }catch(_){res.innerHTML='<div class="loc-msg">Error de red. Comprueba la conexión.</div>'}
+}
+
+function locPick(lat,lng,name){
+  lat=parseFloat(lat);lng=parseFloat(lng);
+  closeLocModal();showToast(`📍 ${name}`);
+  _resolveGeo({lat,lng,name,accuracy:9999});
+  if(lmap)lmap.setView([lat,lng],10);
+}
+function locSkip(){
+  closeLocModal();showToast('📍 Usando Madrid como ubicación por defecto');
+  _resolveGeo({lat:40.4168,lng:-3.7038,name:'Madrid (por defecto)'});
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('loc-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')locSearch()});
+});
+
+// ═══════════════════ NAVIGATION ════════════════════
+const SCREENS=['home','map','meteo','risk','guide'];
+let qLayerTarget=null;
+
+function go(name){
+  SCREENS.forEach(s=>document.getElementById('screen-'+s)?.classList.remove('active'));
+  document.getElementById('screen-'+name)?.classList.add('active');
+  if(name==='map'&&!mapReady)initMap();
+  if(name==='meteo'&&!meteoReady)initMeteo();
+  if(name==='risk'&&!riskReady)initRisk();
+  if(name==='map'&&qLayerTarget){const t=qLayerTarget;qLayerTarget=null;setTimeout(()=>{if(t==='water')togOvOn('water');if(t==='topo')baseLayer('topo')},400)}
+}
+function qLayer(l){qLayerTarget=l}
+
+// ═══════════════════ MAP ═══════════════════════════
+let mapReady=false,lmap;
+const baseLayers={},ovLayers={};
+const ovState={water:false,roads:false,risk:false,nasa:false};
+const CREDITS={osm:{url:'https://www.openstreetmap.org/copyright',txt:'© OpenStreetMap contributors'},topo:{url:'https://opentopomap.org',txt:'© OpenTopoMap (CC-BY-SA)'},sat:{url:'https://www.esri.com',txt:'© Esri World Imagery'}};
+
+function initMap(){
+  mapReady=true;
+  lmap=L.map('lmap',{center:[40.3,-3.7],zoom:6,zoomControl:false});
+  baseLayers.osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+  baseLayers.topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17});
+  baseLayers.sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+  baseLayers.osm.addTo(lmap);
+  L.control.zoom({position:'topleft'}).addTo(lmap);
+  L.control.scale({imperial:false,position:'bottomleft'}).addTo(lmap);
+  ovLayers.water=L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',{maxZoom:18,opacity:0.75});
+  ovLayers.roads=L.tileLayer('https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png',{maxZoom:19,opacity:0.8});
+  
+  // Capa REAL de Riesgo (FWI) de Copernicus/EFFIS
+  ovLayers.risk=L.tileLayer.wms('https://ies-ows.jrc.ec.europa.eu/effis', {
+      layers: 'ecmwf.fwi',
+      format: 'image/png',
+      transparent: true,
+      opacity: 0.6,
+      attribution: '© Copernicus/EFFIS'
+  });
+
+  // Capa REAL de Focos Activos (Hotspots) de Copernicus/EFFIS (satélite VIIRS)
+  ovLayers.nasa=L.tileLayer.wms('https://ies-ows.jrc.ec.europa.eu/effis', {
+      layers: 'viirs.hs',
+      format: 'image/png',
+      transparent: true,
+      opacity: 0.8,
+      attribution: '© Copernicus/EFFIS'
+  });
+
+  onGeoReady(geo=>{
+    lmap.setView([geo.lat,geo.lng],10);
+    L.circleMarker([geo.lat,geo.lng],{radius:9,color:'#FF5722',fillColor:'#FF5722',fillOpacity:0.9,weight:2}).addTo(lmap).bindPopup(`<b>📍 Tu posición</b><br><small>${geo.name}</small>`).openPopup();
+    if(geo.accuracy&&geo.accuracy<5000)L.circle([geo.lat,geo.lng],{radius:geo.accuracy,color:'#FF5722',fillColor:'#FF5722',fillOpacity:0.04,weight:1,dashArray:'4'}).addTo(lmap);
+  });
+}
+
+function baseLayer(name){
+  if(!lmap)return;
+  ['osm','topo','sat'].forEach(k=>{document.getElementById('mbtn-'+k)?.classList.remove('on');if(baseLayers[k]&&lmap.hasLayer(baseLayers[k]))lmap.removeLayer(baseLayers[k])});
+  baseLayers[name]?.addTo(lmap);document.getElementById('mbtn-'+name)?.classList.add('on');
+  const cr=CREDITS[name];if(cr){const lnk=document.getElementById('map-credit-link');lnk.href=cr.url;lnk.textContent=cr.txt}
+}
+function togOv(name){ovState[name]=!ovState[name];applyOv(name)}
+function togOvOn(name){if(!ovState[name]){ovState[name]=true;applyOv(name)}}
+function applyOv(name){
+  document.getElementById('dot-'+name)?.classList.toggle('on',ovState[name]);
+  const layer=ovLayers[name];if(!layer||!lmap)return;
+  ovState[name]?(lmap.hasLayer(layer)||layer.addTo(lmap)):(lmap.hasLayer(layer)&&lmap.removeLayer(layer));
+}
+function locateMe(){if(!lmap)return;showToast('📍 Localizando...');onGeoReady(geo=>{lmap.setView([geo.lat,geo.lng],10);showToast(`📍 ${geo.name}`)})}
+
+// ═══════════════════ WEATHER HELPERS ═══════════════
+const DIRS=['N','NE','E','SE','S','SO','O','NO'];
+const deg2dir=d=>DIRS[Math.round(d/45)%8];
+
+function riskFor(type,v){
+  if(v==null)return{lbl:'–',cls:'',pct:0};
+  if(type==='temp'){if(v>35)return{lbl:'MUY ALTO',cls:'b-hi',pct:100};if(v>30)return{lbl:'ALTO',cls:'b-med',pct:75};if(v>25)return{lbl:'MODERADO',cls:'b-med',pct:45};return{lbl:'BAJO',cls:'b-low',pct:20}}
+  if(type==='hum'){if(v<20)return{lbl:'MUY ALTO',cls:'b-hi',pct:100};if(v<30)return{lbl:'ALTO',cls:'b-med',pct:75};if(v<50)return{lbl:'MODERADO',cls:'b-med',pct:45};return{lbl:'BAJO',cls:'b-low',pct:15}}
+  if(type==='wind'){if(v>40)return{lbl:'MUY ALTO',cls:'b-hi',pct:100};if(v>25)return{lbl:'ALTO',cls:'b-med',pct:70};if(v>15)return{lbl:'MODERADO',cls:'b-med',pct:40};return{lbl:'BAJO',cls:'b-low',pct:15}}
+}
+
+function overallRisk(t,h,w){
+  let s=0;
+  if(t>35)s+=3;else if(t>30)s+=2;else if(t>25)s+=1;
+  if(h<20)s+=3;else if(h<30)s+=2;else if(h<50)s+=1;
+  if(w>40)s+=3;else if(w>25)s+=2;else if(w>15)s+=1;
+  const pct=Math.min(100,Math.round(s/9*100));
+  if(s>=7)return{s,pct,lbl:'CATASTRÓFICO',cls:'pill-extreme',icon:'🟣',color:'#AB47BC',desc:'Activar todos los recursos. Condiciones potencialmente catastróficas.'};
+  if(s>=5)return{s,pct,lbl:'MUY ALTO',cls:'pill-danger',icon:'🔴',color:'#F44336',desc:'Peligro extremo de incendio. Alerta máxima activa.'};
+  if(s>=3)return{s,pct,lbl:'ALTO',cls:'pill-warn',icon:'🟠',color:'#FF9800',desc:'Alto potencial de ignición. Vigilancia reforzada obligatoria.'};
+  if(s>=1)return{s,pct,lbl:'MODERADO',cls:'pill-warn',icon:'🟡',color:'#FFC107',desc:'Vigilancia preventiva recomendada.'};
+  return{s:0,pct:10,lbl:'BAJO',cls:'pill-safe',icon:'🟢',color:'#4CAF50',desc:'Condiciones favorables. Sin restricciones especiales.'};
+}
+
+// ═══════════════════ METEO ═════════════════════════
+let meteoReady=false,WX=null;
+
+function initMeteo(){meteoReady=true;onGeoReady(geo=>fetchAndRenderMeteo(geo))}
+
+async function fetchAndRenderMeteo(geo){
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation,soil_temperature_0cm,dew_point_2m,shortwave_radiation&wind_speed_unit=kmh&timezone=auto`;
+    const r=await fetch(url);if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const c=(await r.json()).current;
+    WX={temp:c.temperature_2m,hum:c.relative_humidity_2m,wind:c.wind_speed_10m,wdir:c.wind_direction_10m,prec:c.precipitation,soil:c.soil_temperature_0cm,dew:c.dew_point_2m,rad:c.shortwave_radiation};
+    renderMeteo(geo);updateHomePill();if(riskReady)drawRisk();
+  }catch(e){document.getElementById('meteo-loading').innerHTML=`<div style="color:var(--red);text-align:center;font-size:.82rem;padding:32px 24px">⚠️ Error al cargar datos meteorológicos.<br><small style="color:var(--txt2)">${e.message}</small></div>`}
+}
+
+function renderMeteo(geo){
+  document.getElementById('m-loc').textContent=geo.name;
+  const fmt=v=>v!=null?v.toFixed(1):'–';
+  document.getElementById('m-temp').textContent=fmt(WX.temp);document.getElementById('m-hum').textContent=WX.hum??'–';document.getElementById('m-wind').textContent=fmt(WX.wind);
+  document.getElementById('m-precip').textContent=fmt(WX.prec);document.getElementById('m-soil').textContent=fmt(WX.soil);document.getElementById('m-dew').textContent=fmt(WX.dew);document.getElementById('m-rad').textContent=WX.rad!=null?Math.round(WX.rad):'–';
+  if(WX.wdir!=null){document.getElementById('m-arrow').style.transform=`rotate(${WX.wdir}deg)`;document.getElementById('m-wdir').textContent=deg2dir(WX.wdir)}
+  const rt=riskFor('temp',WX.temp);const rh=riskFor('hum',WX.hum);const rw=riskFor('wind',WX.wind);
+  [['b-temp',rt],['b-hum',rh],['b-wind',rw]].forEach(([id,rs])=>{const el=document.getElementById(id);el.textContent=rs.lbl;el.className='badge '+rs.cls});
+  document.getElementById('gf-t').style.width=rt.pct+'%';document.getElementById('gf-w').style.width=rw.pct+'%';document.getElementById('gf-h').style.width=rh.pct+'%';
+  document.getElementById('gl-t').textContent=rt.lbl;document.getElementById('gl-w').textContent=rw.lbl;document.getElementById('gl-h').textContent=rh.lbl;
+  const ov=overallRisk(WX.temp,WX.hum,WX.wind);
+  document.getElementById('m-alert').innerHTML=`<div class="risk-pill ${ov.cls}" style="font-size:.8rem;padding:10px 16px;display:inline-flex;gap:8px"><span>${ov.icon}</span><span>Riesgo actual: <strong>${ov.lbl}</strong> — ${ov.desc}</span></div>`;
+  document.getElementById('meteo-loading').style.display='none';document.getElementById('meteo-body').style.display='flex';
+}
+
+function updateHomePill(){
+  if(!WX)return;const ov=overallRisk(WX.temp,WX.hum,WX.wind);
+  document.getElementById('home-pill-ico').textContent=ov.icon;document.getElementById('home-pill-txt').textContent=`Riesgo ${ov.lbl}`;
+  document.getElementById('home-pill-inner').className='risk-pill '+ov.cls;document.getElementById('home-pill').style.display='block';
+}
+
+// ═══════════════════ RISK ══════════════════════════
+let riskReady=false;
+
+function initRisk(){
+  riskReady=true;if(WX){drawRisk();return}
+  onGeoReady(geo=>{if(WX){drawRisk();return}fetchAndRenderMeteo(geo)});
+}
+
+function drawRisk(){
+  if(!WX)return;const ov=overallRisk(WX.temp,WX.hum,WX.wind);
+  const cvs=document.getElementById('rcanvas');
+  if(cvs){
+    const ctx=cvs.getContext('2d');ctx.clearRect(0,0,220,125);const cx=110,cy=115,r=85;
+    [['#4CAF50',0,.22],['#FFC107',.22,.44],['#FF9800',.44,.66],['#F44336',.66,.85],['#AB47BC',.85,1]].forEach(([col,s,e])=>{ctx.beginPath();ctx.arc(cx,cy,r,Math.PI+s*Math.PI,Math.PI+e*Math.PI);ctx.lineWidth=16;ctx.strokeStyle=col;ctx.lineCap='butt';ctx.stroke()});
+    const ang=Math.PI+Math.min(1,ov.s/9)*Math.PI;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+(r-8)*Math.cos(ang),cy+(r-8)*Math.sin(ang));ctx.lineWidth=3;ctx.strokeStyle='white';ctx.lineCap='round';ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,7,0,2*Math.PI);ctx.fillStyle='white';ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='bold 9px Rajdhani,sans-serif';ctx.textAlign='center';ctx.fillText('BAJO',cx-r+12,cy-8);ctx.fillText('EXTREMO',cx+r-14,cy-8);
+  }
+  document.getElementById('rv-num').textContent=ov.pct;document.getElementById('rv-lbl').textContent=ov.lbl;document.getElementById('rv-lbl').style.color=ov.color;document.getElementById('rv-desc').textContent=ov.desc;
+  const FACTS=[
+    {ico:'🌡️',name:'Temperatura',val:`${WX.temp?.toFixed(1)} °C`,type:'temp',v:WX.temp,detail:WX.temp>35?'Temperatura extrema. Seca totalmente la vegetación.':WX.temp>30?'Temperatura alta. Incrementa la combustibilidad.':WX.temp>25?'Temperatura elevada. Vigilancia preventiva.':'Temperatura normal. Factor controlado.'},
+    {ico:'💧',name:'Humedad relativa',val:`${WX.hum} %`,type:'hum',v:WX.hum,detail:WX.hum<20?'Sequía extrema. Vegetación completamente deshidratada.':WX.hum<30?'Humedad muy baja. Alta combustibilidad.':WX.hum<50?'Humedad moderada. Condiciones desfavorables.':'Humedad adecuada. Menor riesgo de ignición.'},
+    {ico:'💨',name:'Viento',val:`${WX.wind?.toFixed(1)} km/h`,type:'wind',v:WX.wind,detail:WX.wind>40?'Viento muy fuerte. Propagación explosiva.':WX.wind>25?'Viento peligroso. Crea focos secundarios.':WX.wind>15?'Viento moderado. Alimenta la combustión.':'Viento bajo. Factor controlado.'},
+  ];
+  document.getElementById('rf-list').innerHTML=FACTS.map(f=>{const rs=riskFor(f.type,f.v);return`<div class="factor-card"><div class="fc-top"><span class="fc-name">${f.ico} ${f.name}</span><span class="fc-val">${f.val}</span></div><div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px"><span class="fc-desc">${f.detail}</span><span class="badge ${rs.cls}" style="flex-shrink:0">${rs.lbl}</span></div></div>`}).join('');
+}
+
+// ═══════════════════ STARTUP ═══════════════════════
+// Mostrar modal de permiso — la geo solo se resuelve cuando
+// el usuario pulsa "Permitir" o selecciona ubicación manual.
+window.addEventListener('load',()=>{
+  openPermModal();
+  onGeoReady(geo=>fetchAndRenderMeteo(geo));
+});
+</script>
+</body>
+</html>
